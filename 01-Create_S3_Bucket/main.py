@@ -2,14 +2,26 @@ import json
 import boto3
 import random
 
-client = boto3.client('s3')
 def lambda_handler(event, context):
-    createS3Bucket = client.create_bucket(
-        Bucket = f"mybucket-{random.randint(1000, 9999)}",
-        CreateBucketConfiguration = {
-            'LocationConstraint': 'ap-southeast-1' 
-        }
-    )
-    print(createS3Bucket)
+    s3 = boto3.client('s3')
 
-# Nếu bạn đang ở Region: us-east-1 thì không cần chỉ định nơi tạo S3 nếu chỉ định sẽ bị lỗi, chỉ định ở một Region khác thì ok
+    # Tạo tên bucket mặc định với dãy số ngẫu nhiên 6 chữ số
+    random_suffix = ''.join(str(random.randint(0, 9)) for _ in range(6))
+    default_bucket_name = f's3bucket-{random_suffix}'
+
+    bucket_name = event.get('bucket_name', default_bucket_name)
+
+    try:
+        s3.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={'LocationConstraint': 'us-west-2'}
+        )
+        return {
+            'statusCode': 200,
+            'body': json.dumps(f"Bucket '{bucket_name}' đã được tạo thành công!")
+        }
+    except Exception as e: 
+        return {
+            'statusCode': 400,
+            'body': json.dumps(f"Lỗi khi tạo bucket: {e}")
+        }
